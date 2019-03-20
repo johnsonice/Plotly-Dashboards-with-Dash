@@ -69,22 +69,44 @@ elements = [
                     multiple=True
                 ),
 
-            dcc.Checklist(
-                options=[
-                    {'label': 'New York City', 'value': 'NYC'},
-                    {'label': 'Montréal', 'value': 'MTL'},
-                    {'label': 'San Francisco', 'value': 'SF'},
-                    {'label': 'New York City1', 'value': 'NYC1'},
-                    {'label': 'Montréal1', 'value': 'MTL1'},
-                    {'label': 'San Francisco1', 'value': 'SF1'}
-                ],
-                values=['MTL', 'SF'],
-                labelStyle={'display': 'inline-block','padding':"10px"}
+            html.Div(children=[
+                    html.H5('Hot Button Issues Checklist:',
+                            style={'margin': '5px','padding':'5px'}),
+                    dcc.Checklist(
+                        options=[
+                            {'label': 'Capital flow management', 'value': 'CFM'},
+                            {'label': 'Exchange restrictions', 'value': 'ER'},
+                            {'label': 'Multiple currency practice', 'value': 'MCP'},
+                            {'label': 'Corruption', 'value': 'CROP'},
+                            {'label': 'Governance', 'value': 'GOV'},
+                            {'label': 'Fintech/digital', 'value': 'FD'},
+                            {'label': 'Macroprudential measures', 'value': 'MPM'},
+                            {'label': 'Housing', 'value': 'HOU'},
+                            {'label': 'Demographic', 'value': 'DEM'},
+                            {'label': 'Shadow banking', 'value': 'SB'},
+                            {'label': 'Competition policy', 'value': 'CP'},
+                            {'label': 'Foreign Exchange intervention', 'value': 'FEI'},
+                            {'label': 'Belt and road', 'value': 'BNR'},
+                            {'label': 'Arrears', 'value': 'ARR'},
+                            {'label': 'Debt restructuring', 'value': 'DR'},
+                            {'label': 'Financing assurances', 'value': 'FA'}
+                        ],
+                        values=['CFM', 'ER'],
+                        labelStyle={'display': 'inline-block',
+                                    'padding':"10px",
+                                    'width':'17%',
+                                    'borderWidth':'1px',
+                                    'margin':'5px',
+                                    'borderRadius': '5px',
+                                    'borderStyle': 'solid'
+                                    }
+                    )
+                    ],style={'width': '100%','margin': '10px'}
             ),
             
             ## build the graph object 
             html.Div(id='controls-container2',
-                     children=[dcc.Graph(id='topic-graph')],
+                     #children=[dcc.Graph(id='topic-graph')],
                      style={'width':'100%',
                              'display':'none',
                              'margin': 'auto'}),
@@ -293,7 +315,7 @@ def store_historical_dfs(json_data):
     return json.dumps(data_store)
 
 
-@app.callback(Output('topic-graph', 'figure'),
+@app.callback(Output('controls-container2', 'children'),
               [Input('intermediate-value', 'children')]
               )
 def update_graph_1(json_data):
@@ -302,7 +324,8 @@ def update_graph_1(json_data):
     doc_date = datasets['doc_date']
     topic_df = pd.read_json(datasets['topic_df'], orient='split')
     figure = create_graph(topic_df,'gensim_topic','content_size') 
-    return figure
+    res = [dcc.Graph(id='topic-graph',figure=figure)]
+    return res
 
 @app.callback(Output('subgraph-1', 'figure'),
               [Input('intermediate-value-2', 'children')]
