@@ -55,6 +55,9 @@ class Processor(object):
 
         return top_id, top_prob
 
+    def get_history():
+        return None
+    
 if __name__ == "__main__":
     ## global folder path 
     model_path = os.path.join('./model_weights/mallet_as_gensim_weights_50_2019_03_08')
