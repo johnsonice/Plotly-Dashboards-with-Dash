@@ -12,7 +12,7 @@ import json
 
 app = dash.Dash()
 
-df = pd.read_csv('../data/wheels.csv')
+df = pd.read_csv('../SourceData/wheels.csv')
 
 app.layout = html.Div([
     html.Div([

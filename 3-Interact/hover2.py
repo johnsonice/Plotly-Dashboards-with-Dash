@@ -8,8 +8,8 @@ import base64
 
 app = dash.Dash()
 
-df = pd.read_csv('../data/wheels.csv')
-
+df = pd.read_csv('../SourceData/wheels.csv')
+#%%
 def encode_image(image_file):
     encoded = base64.b64encode(open(image_file, 'rb').read())
     return 'data:image/png;base64,{}'.format(encoded.decode())
@@ -48,11 +48,11 @@ app.layout = html.Div([
 
 @app.callback(
     Output('hover-image', 'src'),
-    [Input('wheels-plot', 'hoverData')])
+    [Input('wheels-plot', 'clickData')]) ##clickData and hoverData will be also work 
 def callback_image(hoverData):
     wheel=hoverData['points'][0]['y']
     color=hoverData['points'][0]['x']
-    path = '../data/images/'
+    path = '../SourceData/Images/'
     return encode_image(path+df[(df['wheels']==wheel) & \
     (df['color']==color)]['image'].values[0])
 

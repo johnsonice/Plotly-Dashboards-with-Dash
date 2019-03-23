@@ -10,7 +10,7 @@ import plotly.graph_objs as go
 import pandas as pd
 
 
-df = pd.read_csv('../data/mpg.csv')
+df = pd.read_csv('../SourceData/mpg.csv')
 ## mpg hp displace ....
 features = df.columns
 
