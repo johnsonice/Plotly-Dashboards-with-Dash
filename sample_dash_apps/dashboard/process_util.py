@@ -54,10 +54,17 @@ class Processor(object):
         top_prob = np.array(prob)[np.array(prob).argmax()]
 
         return top_id, top_prob
-
+    
+    @staticmethod
+    def get_id2name_map(id2name_path):
+        '''load id 2 name as a dictionary'''
+        map_df = pd.read_csv(id2name_path)
+        id2name = dict(zip(map_df['Gensim topic id'],map_df['label']))
+        return id2name
+        
     def get_history():
         return None
-    
+    #%%
 if __name__ == "__main__":
     ## global folder path 
     model_path = os.path.join('./model_weights/mallet_as_gensim_weights_50_2019_03_08')
@@ -70,3 +77,6 @@ if __name__ == "__main__":
     doc = processor.read_doc(text_file_path)
     text,tid,tprob= processor.infer_single_paragraph(doc[0])
     print(text,tid,tprob)
+#%%
+    id2name_path = './model_weights/mapping_file_for_mallet_as_gensim_weights_50_2019_02_12.csv'
+    map_df = pd.read_csv(id2name_path)

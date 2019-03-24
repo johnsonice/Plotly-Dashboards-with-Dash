@@ -22,9 +22,10 @@ import config
 #%%
 ## initialize processor
 processor = Processor(config.model_path,config.dictionary_path)
+id2name = processor.get_id2name_map(config.id2name_path)
 ## get global historical data in memory
-topic_path = './dashboard/model_weights/Mallet_50_topics_with_country_year_2019_02_12.xlsx'
-data_df = pd.read_excel(topic_path,'Document and Topic')
+#topic_path = './dashboard/model_weights/Mallet_50_topics_with_country_year_2019_02_12.xlsx'
+data_df = pd.read_excel(config.historical_data_path,'Document and Topic')
 df_agg = aggregate_doc_topic_distribution(data_df)
 
 #%%
@@ -109,6 +110,7 @@ elements = [
                      #children=[dcc.Graph(id='topic-graph')],
                      style={'width':'100%',
                              'display':'none',
+                             'padding':'15px',
                              'margin': 'auto'}),
             
             html.Div(id='controls-container',children=[
@@ -187,8 +189,9 @@ def parse_doc(contents, filename, date,processor=processor):
     res = build_html_table(topic_df,filename,date)
     return res
 
-def create_graph(df,xaxis_name,yaxis_name):
-    df[xaxis_name]=df[xaxis_name].apply(lambda x: "Topic-"+str(x))
+def create_graph(df,xaxis_name,yaxis_name,id2name):
+    #df[xaxis_name]=df[xaxis_name].apply(lambda x: "Topic-"+str(x))
+    df[xaxis_name]=df[xaxis_name].apply(lambda x: id2name[x])
     traces = [
             go.Bar(x=df[xaxis_name],
                    y=df[yaxis_name],
@@ -205,9 +208,9 @@ def create_graph(df,xaxis_name,yaxis_name):
            'layout':go_layout}
     return res
 
-def create_sub_graph(df,xaxis_name,yaxis_name):
+def create_sub_graph(df,xaxis_name,yaxis_name,id2name):
     df = copy.copy(df)
-    topic_name = str(df['gensim_topic'].iloc[0])
+    topic_name = id2name[df['gensim_topic'].iloc[0]]
     df[xaxis_name]=df[xaxis_name].apply(lambda x: "_"+str(x)+"_")
     traces = [
             go.Bar(x=df[xaxis_name],
@@ -275,7 +278,7 @@ def update_graph(contents, filename, date,processor=processor):
             'There was an error processing this file.'
         ])
     print('chart create')
-    res = create_graph(topic_df,'gensim_topic','content_size') 
+    res = create_graph(topic_df,'gensim_topic','content_size',id2name) 
     return res
 
 #%%
@@ -323,7 +326,7 @@ def update_graph_1(json_data):
     doc_name = datasets['doc_name']
     doc_date = datasets['doc_date']
     topic_df = pd.read_json(datasets['topic_df'], orient='split')
-    figure = create_graph(topic_df,'gensim_topic','content_size') 
+    figure = create_graph(topic_df,'gensim_topic','content_size',id2name) 
     res = [dcc.Graph(id='topic-graph',figure=figure)]
     return res
 
@@ -333,7 +336,7 @@ def update_graph_1(json_data):
 def update_sub_graph_1(json_data):
     datasets = json.loads(json_data)
     df = pd.read_json(datasets['df_0'], orient='split')
-    figure = create_sub_graph(df,'year','content_size_old') 
+    figure = create_sub_graph(df,'year','content_size_old',id2name) 
     return figure
 
 @app.callback(Output('subgraph-2', 'figure'),
@@ -342,7 +345,7 @@ def update_sub_graph_1(json_data):
 def update_sub_graph_2(json_data):
     datasets = json.loads(json_data)
     df = pd.read_json(datasets['df_1'], orient='split')
-    figure = create_sub_graph(df,'year','content_size_old') 
+    figure = create_sub_graph(df,'year','content_size_old',id2name) 
     return figure
 
 @app.callback(Output('subgraph-3', 'figure'),
@@ -351,7 +354,7 @@ def update_sub_graph_2(json_data):
 def update_sub_graph_3(json_data):
     datasets = json.loads(json_data)
     df = pd.read_json(datasets['df_2'], orient='split')
-    figure = create_sub_graph(df,'year','content_size_old') 
+    figure = create_sub_graph(df,'year','content_size_old',id2name) 
     return figure
 
 @app.callback(Output('subgraph-4', 'figure'),
@@ -360,7 +363,7 @@ def update_sub_graph_3(json_data):
 def update_sub_graph_4(json_data):
     datasets = json.loads(json_data)
     df = pd.read_json(datasets['df_3'], orient='split')
-    figure = create_sub_graph(df,'year','content_size_old') 
+    figure = create_sub_graph(df,'year','content_size_old',id2name) 
     return figure
 
 @app.callback(Output('controls-container', 'style'), 
