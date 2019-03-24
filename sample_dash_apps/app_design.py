@@ -6,6 +6,7 @@ import dash
 from dash.dependencies import Input, Output, State
 import dash_core_components as dcc
 import dash_html_components as html
+import dash_bootstrap_components as dbc
 import dash_table
 from docx import Document
 import pandas as pd
@@ -23,7 +24,8 @@ import config
 #%%
 
 ## load dash style
-external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
+external_stylesheets = [dbc.themes.BOOTSTRAP,'https://codepen.io/chriddyp/pen/bWLwgP.css']
+
 app = dash.Dash(__name__, external_stylesheets=external_stylesheets)
 app.config.requests_pathname_prefix = ''
 
@@ -33,15 +35,51 @@ colors = {
     'text': '#7FDBFF'
 }
 
+navbar = dbc.NavbarSimple(
+    children=[
+        dbc.NavItem(dbc.NavLink("Link", href="#")),
+        dbc.DropdownMenu(
+            nav=True,
+            in_navbar=True,
+            label="Menu",
+            children=[
+                dbc.DropdownMenuItem("Entry 1"),
+                dbc.DropdownMenuItem("Entry 2"),
+                dbc.DropdownMenuItem(divider=True),
+                dbc.DropdownMenuItem("Entry 3"),
+            ],
+        ),
+    ],
+    brand='SPR Review Document Topic Analysis',
+    brand_href="#",
+    sticky="top",
+)
+
+img_path = './dashboard/src/imf_seal.png'
+def encode_image(image_file):
+    encoded = base64.b64encode(open(image_file, 'rb').read())
+    return 'data:image/png;base64,{}'.format(encoded.decode())
+
 elements = [
-            html.H2(
-                children='SPR Review Document Topic Analysis',
-                style={
-                    'textAlign': 'center',
-                    'padding': '50px',
-                    #'color': colors['text']
-                }
-            ),
+            html.Div([
+                html.Div([
+                    html.Div([
+                        html.Img(src=encode_image(img_path),
+                                 style={'color': '#2c2825','height':'100%'}),
+                    ],style={'width':'20%','margin':'10 auto','textAlign': 'center',}),
+    
+                    html.H2(
+                        children='SPR Review Document Topic Analysis',
+                        style={
+                            'width':'60%',
+                            'textAlign': 'center',
+                            'padding-top':'25px',
+                            'color':'white'
+                        }
+                    )
+                ],className='row',style={'height':'120px','background-color':'#66b3ff'}),
+            ],style={'margin':'25px 10px 40px 10px','borderRadius': '15px'}),
+            
             dcc.Upload(
                     id='upload-data',
                     children=html.Div([
@@ -49,21 +87,32 @@ elements = [
                         html.A('Select Files')
                         ]),
                     style={
-                        'width': '100%',
+                        'width': '90%',
                         'height': '80px',
                         'lineHeight': '80px',
                         'borderWidth': '1px',
                         'borderStyle': 'dashed',
                         'borderRadius': '5px',
                         'textAlign': 'center',
-                        'margin': '10px'
+                        'background-color':'#cccccc',
+                        'opacity':'.3',
+                        'margin': 'auto auto 40px auto'
                         },
                     # Allow multiple files to be uploaded
                     multiple=True
                 ),
+             html.Div(
+                    [
+                        dbc.Progress(id="progress", value=0, striped=True, animated=True),
+                        dcc.Interval(id="interval", interval=250, n_intervals=0),
+                    ]
+                ,style={'display':'none'}),
+                            
             html.Div(children=[
                     html.H5('Hot Button Issues Checklist:',
-                            style={'margin': '5px','padding':'5px'}),
+                            style={'margin': '5px',
+                                   'padding':'5px',
+                                   }),
                     dcc.Checklist(
                         options=[
                             {'label': 'Capital flow management', 'value': 'CFM'},
@@ -86,9 +135,9 @@ elements = [
                         values=['CFM', 'ER'],
                         labelStyle={'display': 'inline-block',
                                     'padding':"10px",
-                                    'width':'17%',
+                                    'width':'23.5%',
                                     'borderWidth':'1px',
-                                    'margin':'5px',
+                                    'margin':'6px',
                                     'borderRadius': '5px',
                                     'borderStyle': 'solid'
                                     }
@@ -99,7 +148,10 @@ elements = [
             ## build the graph object 
             html.Div(id='controls-container2',
                      #children=[dcc.Graph(id='topic-graph')],
-                     ),
+                     style={'width':'100%',
+                             'display':'none',
+                             'padding':'15px',
+                             'margin': 'auto'}),
             
             html.Div(id='controls-container',children=[
 
@@ -127,7 +179,7 @@ elements = [
             html.Div(id='intermediate-value-2',style={'display': 'none'}),
         ]
 
-app.layout = html.Div(elements)
+app.layout = html.Div(elements,className='container',style={'max-width': '80%'})
 
 #%%
 

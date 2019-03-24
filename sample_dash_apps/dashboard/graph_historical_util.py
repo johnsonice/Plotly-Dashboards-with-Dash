@@ -27,11 +27,11 @@ def get_county_df(agg_df,country_name,year):
     country_df.reset_index(inplace=True)  
     return country_df
     
-def get_top_topic_ids(country_df,topic_df,topn=4):
+def get_top_topic_ids(country_df,topic_df,topn=5):
     test_df = pd.merge(country_df,topic_df,how='right',on='gensim_topic')
     test_df['df'] = test_df['content_size'] - test_df['content_size_old']
     test_df.sort_values(by=['df'],inplace=True,ascending=False) 
-    top_topic_ids = test_df.head(4)['gensim_topic'].tolist()
+    top_topic_ids = test_df.head(topn)['gensim_topic'].tolist()
     return top_topic_ids
 
 def get_plot_df_list(topic_ids,df_agg,topic_df,country):
@@ -43,7 +43,7 @@ def get_plot_df_list(topic_ids,df_agg,topic_df,country):
         ts_dfs.append(df_i)
     return ts_dfs
 
-def get_plot_data(df_agg,country,doc_path,processor):
+def get_plot_data(df_agg,country,doc_path,processor,topn=4):
 
     ## get lattest year for that country
     temp = df_agg.loc[country,:].reset_index()
@@ -55,7 +55,7 @@ def get_plot_data(df_agg,country,doc_path,processor):
     topic_df = get_topic_df(processor,doc)
     
     ## get ts dfs
-    topic_ids = get_top_topic_ids(country_df,topic_df,4)
+    topic_ids = get_top_topic_ids(country_df,topic_df,topn)
     ts_dfs = get_plot_df_list(topic_ids,df_agg,topic_df,country)
     
     return ts_dfs
@@ -96,8 +96,9 @@ if __name__ == "__main__":
     #%%
     ## print out country names
     print(df_agg.index.get_level_values(0).unique())
-    ts_dfs= get_plot_data(df_agg,"Brazil",'./test/Brazil_2013.DOCX',processor)
-    
+    ts_dfs= get_plot_data(df_agg,"Brazil",'./test/Brazil_2013.DOCX',processor,6)
+    #ts_dfs
+    #%%
     res = {}
     for idx,d in enumerate(ts_dfs):
         d.plot.bar(x='year',y='content_size_old')

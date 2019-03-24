@@ -6,6 +6,7 @@ import dash
 from dash.dependencies import Input, Output, State
 import dash_core_components as dcc
 import dash_html_components as html
+import dash_bootstrap_components as dbc
 import dash_table
 from docx import Document
 import pandas as pd
@@ -25,13 +26,16 @@ processor = Processor(config.model_path,config.dictionary_path)
 id2name = processor.get_id2name_map(config.id2name_path)
 ## get global historical data in memory
 #topic_path = './dashboard/model_weights/Mallet_50_topics_with_country_year_2019_02_12.xlsx'
-data_df = pd.read_excel(config.historical_data_path,'Document and Topic')
-df_agg = aggregate_doc_topic_distribution(data_df)
+if os.path.exists(config.df_agg_pkl_path):
+    print("Load agg historical from pkle")
+    df_agg = pd.read_pickle(config.df_agg_pkl_path)
+else:
+    data_df = pd.read_excel(config.historical_data_path,'Document and Topic')
+    df_agg = aggregate_doc_topic_distribution(data_df)
 
 #%%
-
 ## load dash style
-external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
+external_stylesheets = [dbc.themes.BOOTSTRAP,'https://codepen.io/chriddyp/pen/bWLwgP.css']
 app = dash.Dash(__name__, external_stylesheets=external_stylesheets)
 app.config.requests_pathname_prefix = ''
 
@@ -41,15 +45,51 @@ colors = {
     'text': '#7FDBFF'
 }
 
+navbar = dbc.NavbarSimple(
+    children=[
+        dbc.NavItem(dbc.NavLink("Link", href="#")),
+        dbc.DropdownMenu(
+            nav=True,
+            in_navbar=True,
+            label="Menu",
+            children=[
+                dbc.DropdownMenuItem("Entry 1"),
+                dbc.DropdownMenuItem("Entry 2"),
+                dbc.DropdownMenuItem(divider=True),
+                dbc.DropdownMenuItem("Entry 3"),
+            ],
+        ),
+    ],
+    brand='SPR Review Document Topic Analysis',
+    brand_href="#",
+    sticky="top",
+)
+
+img_path = './dashboard/src/imf_seal.png'
+def encode_image(image_file):
+    encoded = base64.b64encode(open(image_file, 'rb').read())
+    return 'data:image/png;base64,{}'.format(encoded.decode())
+
 elements = [
-            html.H2(
-                children='SPR Review Document Topic Analysis',
-                style={
-                    'textAlign': 'center',
-                    'padding': '50px',
-                    #'color': colors['text']
-                }
-            ),
+            html.Div([
+                html.Div([
+                    html.Div([
+                        html.Img(src=encode_image(img_path),
+                                 style={'color': '#2c2825','height':'100%'}),
+                    ],style={'width':'20%','margin':'10 auto','textAlign': 'center',}),
+    
+                    html.H2(
+                        children='SPR Review Document Topic Analysis',
+                        style={
+                            'width':'60%',
+                            'textAlign': 'center',
+                            'padding-top':'25px',
+                            'color':'white'
+                        }
+                    )
+                ],className='row',style={'height':'120px','background-color':'#007bff'}),
+            ],style={'margin':'25px 10px 40px 10px','borderRadius': '15px'}),
+            
             dcc.Upload(
                     id='upload-data',
                     children=html.Div([
@@ -57,22 +97,32 @@ elements = [
                         html.A('Select Files')
                         ]),
                     style={
-                        'width': '100%',
+                        'width': '90%',
                         'height': '80px',
                         'lineHeight': '80px',
                         'borderWidth': '1px',
                         'borderStyle': 'dashed',
                         'borderRadius': '5px',
                         'textAlign': 'center',
-                        'margin': '10px'
+                        'background-color':'#cccccc',
+                        'opacity':'.3',
+                        'margin': 'auto auto 40px auto'
                         },
                     # Allow multiple files to be uploaded
                     multiple=True
                 ),
-
+             html.Div(
+                    [
+                        dbc.Progress(id="progress", value=0, striped=True, animated=True),
+                        dcc.Interval(id="interval", interval=50, n_intervals=0),
+                    ]
+                ,style={'display':'block','width':'80%','margin':'auto'}),
+                            
             html.Div(children=[
                     html.H5('Hot Button Issues Checklist:',
-                            style={'margin': '5px','padding':'5px'}),
+                            style={'margin': '5px',
+                                   'padding':'5px',
+                                   }),
                     dcc.Checklist(
                         options=[
                             {'label': 'Capital flow management', 'value': 'CFM'},
@@ -95,9 +145,9 @@ elements = [
                         values=['CFM', 'ER'],
                         labelStyle={'display': 'inline-block',
                                     'padding':"10px",
-                                    'width':'17%',
+                                    'width':'23.5%',
                                     'borderWidth':'1px',
-                                    'margin':'5px',
+                                    'margin':'6px',
                                     'borderRadius': '5px',
                                     'borderStyle': 'solid'
                                     }
@@ -109,26 +159,11 @@ elements = [
             html.Div(id='controls-container2',
                      #children=[dcc.Graph(id='topic-graph')],
                      style={'width':'100%',
-                             'display':'none',
+                             'display':'block',
                              'padding':'15px',
                              'margin': 'auto'}),
             
-            html.Div(id='controls-container',children=[
-
-                ## build the graph object 
-                html.Div([
-                    dcc.Graph(id='subgraph-1'),
-                    ## build the graph object 
-                    dcc.Graph(id='subgraph-2')
-                    ],style= {'width': '49%', 'display': 'inline-block'}),
-    
-                html.Div([
-                    ## build the graph object 
-                    dcc.Graph(id='subgraph-3'),
-                    ## build the graph object 
-                    dcc.Graph(id='subgraph-4')
-                ],style= {'width': '49%', 'display': 'inline-block'}),
-            ],style={'display':'none'}),
+            html.Div(id='controls-container',children=[],style={'display':'block'}),
 
 #            ## build table object
 #            html.Div(id='output-data-upload',style={'width': '50%',
@@ -139,7 +174,9 @@ elements = [
             html.Div(id='intermediate-value-2',style={'display': 'none'}),
         ]
 
-app.layout = html.Div(elements)
+app.layout = html.Div(elements,className='container',style={'max-width': '80%'})
+
+
 
 #%%
 
@@ -154,13 +191,7 @@ def build_html_table(df,filename,date):
                     ),
             
                     html.Hr(),  # horizontal line
-            
-#                    # For debugging, display the raw contents provided by the web browser
-#                    html.Div('Raw Content'),
-#                    html.Pre(contents[0:200] + '...', style={
-#                        'whiteSpace': 'pre-wrap',
-#                        'wordBreak': 'break-all'
-#                    })
+
                 ])
     return res 
 
@@ -191,7 +222,13 @@ def parse_doc(contents, filename, date,processor=processor):
 
 def create_graph(df,xaxis_name,yaxis_name,id2name):
     #df[xaxis_name]=df[xaxis_name].apply(lambda x: "Topic-"+str(x))
+    df = copy.copy(df)
     df[xaxis_name]=df[xaxis_name].apply(lambda x: id2name[x])
+    ## merge ids with same topic 
+    df = df.groupby(xaxis_name).agg(sum)
+    df.reset_index(inplace=True)
+    df.sort_values(by=['content_size'],ascending=False,inplace=True)
+    
     traces = [
             go.Bar(x=df[xaxis_name],
                    y=df[yaxis_name],
@@ -256,6 +293,25 @@ def process_input_data(contents, filename, date,processor=processor):
             'There was an error processing this file.'
         ])
     
+def create_all_sub_graph(figures):
+    ## build the graph object 
+    res = [
+                html.Div([
+                    dcc.Graph(id='subgraph-1',figure=figures[0]),
+                    ## build the graph object 
+                    dcc.Graph(id='subgraph-2',figure=figures[1])
+                    ],style= {'width': '49%', 'display': 'inline-block'}),
+            
+                html.Div([
+                    ## build the graph object 
+                    dcc.Graph(id='subgraph-3',figure=figures[2]),
+                    ## build the graph object 
+                    dcc.Graph(id='subgraph-4',figure=figures[3])
+                ],style= {'width': '49%', 'display': 'inline-block'})
+        ]
+    
+    return res
+    
     
 def update_graph(contents, filename, date,processor=processor):
     content_type, content_string = contents.split(',')
@@ -280,6 +336,8 @@ def update_graph(contents, filename, date,processor=processor):
     print('chart create')
     res = create_graph(topic_df,'gensim_topic','content_size',id2name) 
     return res
+
+
 
 #%%
 @app.callback(Output('intermediate-value', 'children'),
@@ -330,58 +388,33 @@ def update_graph_1(json_data):
     res = [dcc.Graph(id='topic-graph',figure=figure)]
     return res
 
-@app.callback(Output('subgraph-1', 'figure'),
+@app.callback(Output('controls-container', 'children'),
               [Input('intermediate-value-2', 'children')]
               )
-def update_sub_graph_1(json_data):
+def update_all_sub_graph(json_data):
     datasets = json.loads(json_data)
-    df = pd.read_json(datasets['df_0'], orient='split')
-    figure = create_sub_graph(df,'year','content_size_old',id2name) 
-    return figure
-
-@app.callback(Output('subgraph-2', 'figure'),
-              [Input('intermediate-value-2', 'children')]
-              )
-def update_sub_graph_2(json_data):
-    datasets = json.loads(json_data)
-    df = pd.read_json(datasets['df_1'], orient='split')
-    figure = create_sub_graph(df,'year','content_size_old',id2name) 
-    return figure
-
-@app.callback(Output('subgraph-3', 'figure'),
-              [Input('intermediate-value-2', 'children')]
-              )
-def update_sub_graph_3(json_data):
-    datasets = json.loads(json_data)
-    df = pd.read_json(datasets['df_2'], orient='split')
-    figure = create_sub_graph(df,'year','content_size_old',id2name) 
-    return figure
-
-@app.callback(Output('subgraph-4', 'figure'),
-              [Input('intermediate-value-2', 'children')]
-              )
-def update_sub_graph_4(json_data):
-    datasets = json.loads(json_data)
-    df = pd.read_json(datasets['df_3'], orient='split')
-    figure = create_sub_graph(df,'year','content_size_old',id2name) 
-    return figure
-
-@app.callback(Output('controls-container', 'style'), 
-              [Input('intermediate-value', 'children')])
-def toggle_container1(data):
-    if data:
-        return {'display': 'block'}
-    else:
-        return {'display': 'none'}
+    figures = []
+    for i in range(4):
+        df = pd.read_json(datasets['df_{}'.format(str(i))], orient='split')
+        figure = create_sub_graph(df,'year','content_size_old',id2name) 
+        figures.append(figure)
     
-@app.callback(Output('controls-container2', 'style'), 
-              [Input('intermediate-value', 'children')])
-def toggle_container2(data):
-    if data:
-        return {'display': 'inline-block','width':'100%','margin': '0 auto'}
-    else:
-        return {'display': 'none'}
-    
+    res = create_all_sub_graph(figures)
+    return res
+
+@app.callback(Output("progress", "value"), 
+              [Input("interval", "n_intervals")])
+def advance_progress(n):
+    return min(n % 110, 100)
+
+#@app.callback(Output('controls-container', 'style'), 
+#              [Input('intermediate-value', 'children')])
+#def toggle_container1(data):
+#    if data:
+#        return {'display': 'block'}
+#    else:
+#        return {'display': 'none'}
+
 if __name__ == '__main__':
     #app.run_server(port=8888, host='0.0.0.0', debug=True)
     app.run_server(debug=True)
