@@ -79,7 +79,7 @@ elements = [
                 html.Div([
                     html.Div([
                         html.Img(src=encode_image(img_path),
-                                 style={'color': '#2c2825','height':'100%'}),
+                                 style={'color': '#2c2825','height':'120px'}),
                     ],style={'width':'20%','margin':'10 auto','textAlign': 'center',}),
     
                     html.H3(
