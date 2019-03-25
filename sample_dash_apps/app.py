@@ -12,6 +12,7 @@ from docx import Document
 import pandas as pd
 import json 
 import copy
+import time
 
 import os
 import sys
@@ -32,13 +33,16 @@ if os.path.exists(config.df_agg_pkl_path):
 else:
     data_df = pd.read_excel(config.historical_data_path,'Document and Topic')
     df_agg = aggregate_doc_topic_distribution(data_df)
-
+    df_agg.to_pickle(config.df_agg_pkl_path)
 #%%
 ## load dash style
 external_stylesheets = [dbc.themes.BOOTSTRAP,'https://codepen.io/chriddyp/pen/bWLwgP.css']
 app = dash.Dash(__name__, external_stylesheets=external_stylesheets)
-app.config.requests_pathname_prefix = ''
+# Loading screen CSS
+app.css.append_css({"external_url": "https://codepen.io/chriddyp/pen/brPBPO.css"})
 
+app.config.requests_pathname_prefix = ''
+app.config['suppress_callback_exceptions']=True
 
 colors = {
     'background': '#111111',
@@ -78,7 +82,7 @@ elements = [
                                  style={'color': '#2c2825','height':'100%'}),
                     ],style={'width':'20%','margin':'10 auto','textAlign': 'center',}),
     
-                    html.H2(
+                    html.H3(
                         children='SPR Review Document Topic Analysis',
                         style={
                             'width':'60%',
@@ -92,9 +96,9 @@ elements = [
             
             dcc.Upload(
                     id='upload-data',
-                    children=html.Div([
+                    children=html.Div(id='processing_text',children=[
                         'Drag and Drop or ',
-                        html.A('Select Files')
+                        html.A('Select Files',style={'color':'blue'})
                         ]),
                     style={
                         'width': '90%',
@@ -105,19 +109,13 @@ elements = [
                         'borderRadius': '5px',
                         'textAlign': 'center',
                         'background-color':'#cccccc',
-                        'opacity':'.3',
+                        'opacity':'.5',
                         'margin': 'auto auto 40px auto'
                         },
                     # Allow multiple files to be uploaded
                     multiple=True
                 ),
-             html.Div(
-                    [
-                        dbc.Progress(id="progress", value=0, striped=True, animated=True),
-                        dcc.Interval(id="interval", interval=50, n_intervals=0),
-                    ]
-                ,style={'display':'block','width':'80%','margin':'auto'}),
-                            
+    
             html.Div(children=[
                     html.H5('Hot Button Issues Checklist:',
                             style={'margin': '5px',
@@ -163,14 +161,16 @@ elements = [
                              'padding':'15px',
                              'margin': 'auto'}),
             
-            html.Div(id='controls-container',children=[],style={'display':'block'}),
+            html.Div(id='controls-container',children=[''],style={'display':'block'}),
 
 #            ## build table object
 #            html.Div(id='output-data-upload',style={'width': '50%',
 #                                                    'margin': 'auto',
 #                                                    'padding':'50px'}),
             ## store intemediate data
-            html.Div(id='intermediate-value',style={'display': 'none'}),
+
+            html.Div(id='intermediate-value',
+                         style={'display': 'none'}),
             html.Div(id='intermediate-value-2',style={'display': 'none'}),
         ]
 
@@ -345,12 +345,14 @@ def update_graph(contents, filename, date,processor=processor):
               [State('upload-data', 'filename'),
                State('upload-data', 'last_modified')])
 def store_temp_date(list_of_contents, list_of_names, list_of_dates):
-    
-    doc,doc_name,doc_date = list_of_contents[0],list_of_names[0],list_of_dates[0]
-    res = process_input_data(doc,doc_name,doc_date)
+    try:
+        doc,doc_name,doc_date = list_of_contents[0],list_of_names[0],list_of_dates[0]
+        res = process_input_data(doc,doc_name,doc_date)
+    except:
+        res = None
     
     return res    
-
+    
 @app.callback(Output('intermediate-value-2', 'children'),
               [Input('intermediate-value', 'children')]
               )
@@ -402,10 +404,6 @@ def update_all_sub_graph(json_data):
     res = create_all_sub_graph(figures)
     return res
 
-@app.callback(Output("progress", "value"), 
-              [Input("interval", "n_intervals")])
-def advance_progress(n):
-    return min(n % 110, 100)
 
 #@app.callback(Output('controls-container', 'style'), 
 #              [Input('intermediate-value', 'children')])
