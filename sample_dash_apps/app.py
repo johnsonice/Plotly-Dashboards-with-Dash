@@ -23,7 +23,7 @@ from graph_historical_util import get_county_df,get_top_topic_ids,get_plot_df_li
 import config
 #%%
 ## initialize processor
-processor = Processor(config.model_path,config.dictionary_path)
+processor = Processor(config.model_path,config.dictionary_path,config.country_map_path)
 id2name = processor.get_id2name_map(config.id2name_path)
 ## get global historical data in memory
 #topic_path = './dashboard/model_weights/Mallet_50_topics_with_country_year_2019_02_12.xlsx'
@@ -34,6 +34,12 @@ else:
     data_df = pd.read_excel(config.historical_data_path,'Document and Topic')
     df_agg = aggregate_doc_topic_distribution(data_df)
     df_agg.to_pickle(config.df_agg_pkl_path)
+    
+#%%
+    
+countries = df_agg.index.get_level_values(0).unique().to_list()
+country_dropdown_data = [{'label':c,'value':c} for c in countries]
+
 #%%
 ## load dash style
 external_stylesheets = [dbc.themes.BOOTSTRAP,'https://codepen.io/chriddyp/pen/bWLwgP.css']
@@ -152,7 +158,27 @@ elements = [
                     )
                     ],style={'width': '100%','margin': '10px'}
             ),
-            
+            ## build country dropdown 
+            html.Div(id='country-picker',
+                     children=[
+                        html.Div(
+                            children=[   
+                                html.Div(' ',style={'width':"20%"}),
+                                html.Div('Country Name: ',style={'width':"15%",
+                                                                 'textAlign': 'center',
+                                                                 'margin-top': 'auto',
+                                                                 'margin-bottom':'auto'}),
+                                html.Div([            
+                                        dcc.Dropdown(
+                                            id = 'country-dropdown',
+                                            options=country_dropdown_data,
+                                            value='United States'
+                                        )
+                                    ],style={'width':'30%'}),
+                                html.Div(' ',style={'width':"20%"}),
+                            ],className='row',style={'margin':'auto','padding-top':'30px'})
+                        ]
+                ,style={'display':'none'}),
             ## build the graph object 
             html.Div(id='controls-container2',
                      #children=[dcc.Graph(id='topic-graph')],
@@ -276,11 +302,14 @@ def process_input_data(contents, filename, date,processor=processor):
             # Assume that the user uploaded a docx file
             #res = read_doc(io.BytesIO(decoded))
             doc = processor.read_doc(io.BytesIO(decoded))
+            ## get country name 
+            country_name = processor.country_dector.one_step_get_cname(io.BytesIO(decoded))
             ## get topic df
             topic_df = get_topic_df(processor,doc)
             data_store = {'doc_name':filename,
-                            'doc_date':date,
-                            'topic_df':topic_df.to_json(orient='split', date_format='iso')}
+                          'country_name':country_name,
+                          'doc_date':date,
+                          'topic_df':topic_df.to_json(orient='split', date_format='iso')}
             return json.dumps(data_store)
             
         else:
@@ -354,14 +383,16 @@ def store_temp_date(list_of_contents, list_of_names, list_of_dates):
     return res    
     
 @app.callback(Output('intermediate-value-2', 'children'),
-              [Input('intermediate-value', 'children')]
+              [Input('intermediate-value', 'children'),
+               Input('country-dropdown', 'value')]
               )
-def store_historical_dfs(json_data):
+def store_historical_dfs(json_data,country_name):
     datasets = json.loads(json_data)
     doc_name = datasets['doc_name']
     doc_date = datasets['doc_date']
     ## load data
-    country_name = "Brazil"
+    print(country_name)
+    #country_name = "Brazil"
     topic_df = pd.read_json(datasets['topic_df'], orient='split')
     temp = df_agg.loc[country_name,:].reset_index()
     lattest_year = temp['year'].unique()[-1]
@@ -377,6 +408,13 @@ def store_historical_dfs(json_data):
     
     return json.dumps(data_store)
 
+@app.callback(Output('country-dropdown', 'value'),
+              [Input('intermediate-value', 'children')]
+              )
+def update_country_dropdown(json_data):
+    datasets = json.loads(json_data)
+    country_name = datasets['country_name']
+    return country_name
 
 @app.callback(Output('controls-container2', 'children'),
               [Input('intermediate-value', 'children')]
@@ -405,13 +443,13 @@ def update_all_sub_graph(json_data):
     return res
 
 
-#@app.callback(Output('controls-container', 'style'), 
-#              [Input('intermediate-value', 'children')])
-#def toggle_container1(data):
-#    if data:
-#        return {'display': 'block'}
-#    else:
-#        return {'display': 'none'}
+@app.callback(Output('country-picker', 'style'), 
+              [Input('intermediate-value', 'children')])
+def toggle_container1(data):
+    if data:
+        return {'display': 'block'}
+    else:
+        return {'display': 'none'}
 
 if __name__ == '__main__':
     #app.run_server(port=8888, host='0.0.0.0', debug=True)
