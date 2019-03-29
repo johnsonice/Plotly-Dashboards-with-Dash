@@ -36,6 +36,7 @@ if os.path.exists(config.df_agg_pkl_path):
     print("Load agg historical from pkle")
     df_agg = pd.read_pickle(config.df_agg_pkl_path)
 else:
+    print('Generate agg historical df data and save as pickle ...')
     data_df = pd.read_excel(config.historical_data_path,'Document and Topic')
     df_agg = aggregate_doc_topic_distribution(data_df)
     df_agg.to_pickle(config.df_agg_pkl_path)
@@ -309,18 +310,10 @@ def process_input_data(contents, filename, date,processor=processor):
             doc = processor.read_doc(io.BytesIO(decoded))
             ## get country name 
             country_name = processor.country_dector.one_step_get_cname(io.BytesIO(decoded))
-            print('\n')
-            print(country_name)
-            print('\n')
             ## get hotbutton issues 
             document_for_hotbutton = processor.hot_button_finder.read_doc(io.BytesIO(decoded))
-            print('\n')
-            print('doc read successfully')
-            print('\n')
             filtered_hotbutton_issues =processor.hot_button_finder.check_all_topics(document_for_hotbutton)
-            print('\n')
-            print(filtered_hotbutton_issues)
-            print('\n')
+
             ## get topic df
             topic_df = get_topic_df(processor,doc)
             
