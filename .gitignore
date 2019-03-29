@@ -1,7 +1,7 @@
 ## big data folder
 *temp/
 *model_weights/
-
+*.pyc
 
 
 

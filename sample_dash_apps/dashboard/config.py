@@ -15,3 +15,5 @@ historical_data_path = os.path.join(root_path,"dashboard/model_weights/Mallet_50
 id2name_path = os.path.join(root_path,'dashboard/model_weights/mapping_file_for_mallet_as_gensim_weights_50_2019_02_12.csv')
 df_agg_pkl_path = os.path.join(root_path,'dashboard/model_weights/df_agg.pkl')
 country_map_path = os.path.join(root_path,'dashboard/model_weights/country_map.xlsx')
+hot_button_file_path = os.path.join(root_path,'dashboard/model_weights/hot_button_issues.xlsx')
+hot_button_dict_path = os.path.join(root_path,'dashboard/model_weights/hot_button_dict.pickle')

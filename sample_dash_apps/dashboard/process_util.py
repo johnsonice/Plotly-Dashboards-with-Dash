@@ -11,18 +11,20 @@ import time
 import spacy
 from docx import Document
 from country_name_util import Country_detector
+from hot_button_check_util import Hotbutton_finder
 nlp = spacy.load('en')
 
 class Processor(object):
     """
     an hanlp analyzer object for dependency parsing an other related operations 
     """
-    def __init__(self,model_path,dictionary_path,country_map_path):
+    def __init__(self,model_path,dictionary_path,country_map_path,hot_button_file=None,hot_button_dict_path=None):
         self.model_path = model_path
         self.dictionary_path = dictionary_path
         self.vocab_dict =  corpora.Dictionary.load(dictionary_path)
         self.model = LdaModel.load(model_path)
         self.country_dector = Country_detector(country_map_path)
+        self.hot_button_finder = Hotbutton_finder(hot_button_file,hot_button_dict_path)
         print('LDA model load successfully. ')
 
     @staticmethod
@@ -72,8 +74,10 @@ if __name__ == "__main__":
     model_path = os.path.join('./model_weights/mallet_as_gensim_weights_50_2019_03_08')
     dictionary_path = './model_weights/dictionary.dict'
     country_map_path = './model_weights/country_map.xlsx'
+    hot_button_file_path = './model_weights/hot_button_issues.xlsx'
+    hot_button_dict_path = './model_weights/hot_button_dict.pickle'
     ## initialize processor
-    processor = Processor(model_path,dictionary_path,country_map_path)
+    processor = Processor(model_path,dictionary_path,country_map_path,hot_button_file_path,hot_button_dict_path)
     
     ## try one test file
     text_file_path = "./test/Brazil_2013.DOCX"
@@ -86,5 +90,10 @@ if __name__ == "__main__":
     print(processor.country_dector.one_step_get_cname(text_file_path))
     
     #%%
-    id2name_path = './model_weights/mapping_file_for_mallet_as_gensim_weights_50_2019_02_12.csv'
-    map_df = pd.read_csv(id2name_path)
+    ## check hotbutton issues 
+    doc_for_hotbutton = processor.hot_button_finder.read_doc(text_file_path)
+    print(processor.hot_button_finder.check_all_topics(doc_for_hotbutton))
+    
+    #%%
+#    id2name_path = './model_weights/mapping_file_for_mallet_as_gensim_weights_50_2019_02_12.csv'
+#    map_df = pd.read_csv(id2name_path)

@@ -23,7 +23,12 @@ from graph_historical_util import get_county_df,get_top_topic_ids,get_plot_df_li
 import config
 #%%
 ## initialize processor
-processor = Processor(config.model_path,config.dictionary_path,config.country_map_path)
+processor = Processor(config.model_path,
+                      config.dictionary_path,
+                      config.country_map_path,
+                      config.hot_button_file_path,
+                      config.hot_button_dict_path)
+
 id2name = processor.get_id2name_map(config.id2name_path)
 ## get global historical data in memory
 #topic_path = './dashboard/model_weights/Mallet_50_topics_with_country_year_2019_02_12.xlsx'
@@ -36,9 +41,13 @@ else:
     df_agg.to_pickle(config.df_agg_pkl_path)
     
 #%%
-    
+## get country drop down content 
 countries = df_agg.index.get_level_values(0).unique().to_list()
 country_dropdown_data = [{'label':c,'value':c} for c in countries]
+
+## get hotbutton issue list 
+hotbutton_issues = list(processor.hot_button_finder.hot_button_dict.keys())
+hotbutton_issues_items = [{'label':hi,'value':hi} for hi in hotbutton_issues]
 
 #%%
 ## load dash style
@@ -116,37 +125,31 @@ elements = [
                         'textAlign': 'center',
                         'background-color':'#cccccc',
                         'opacity':'.5',
-                        'margin': 'auto auto 40px auto'
+                        'margin': 'auto auto 20px auto'
                         },
                     # Allow multiple files to be uploaded
                     multiple=True
                 ),
     
+        ## historical data link
+            html.Div(
+                children=['For historical timeseries analysis, please visit our ',
+                 html.A('Tableau Dashboard', 
+                        href='https://tableau.imf.org/#/views/ToipcModelingwithCountryandYearFilter/CountryView',
+                        style={'color':'blue'}
+                        )]
+                ,style={'textAlign': 'center','margin':'auto'}),
+            
+        ## hotbutton issues 
             html.Div(children=[
                     html.H5('Hot Button Issues Checklist:',
                             style={'margin': '5px',
                                    'padding':'5px',
                                    }),
                     dcc.Checklist(
-                        options=[
-                            {'label': 'Capital flow management', 'value': 'CFM'},
-                            {'label': 'Exchange restrictions', 'value': 'ER'},
-                            {'label': 'Multiple currency practice', 'value': 'MCP'},
-                            {'label': 'Corruption', 'value': 'CROP'},
-                            {'label': 'Governance', 'value': 'GOV'},
-                            {'label': 'Fintech/digital', 'value': 'FD'},
-                            {'label': 'Macroprudential measures', 'value': 'MPM'},
-                            {'label': 'Housing', 'value': 'HOU'},
-                            {'label': 'Demographic', 'value': 'DEM'},
-                            {'label': 'Shadow banking', 'value': 'SB'},
-                            {'label': 'Competition policy', 'value': 'CP'},
-                            {'label': 'Foreign Exchange intervention', 'value': 'FEI'},
-                            {'label': 'Belt and road', 'value': 'BNR'},
-                            {'label': 'Arrears', 'value': 'ARR'},
-                            {'label': 'Debt restructuring', 'value': 'DR'},
-                            {'label': 'Financing assurances', 'value': 'FA'}
-                        ],
-                        values=['CFM', 'ER'],
+                        id='hot-button-issues',
+                        options=hotbutton_issues_items,
+                        values=[],
                         labelStyle={'display': 'inline-block',
                                     'padding':"10px",
                                     'width':'23.5%',
@@ -179,6 +182,8 @@ elements = [
                             ],className='row',style={'margin':'auto','padding-top':'30px'})
                         ]
                 ,style={'display':'none'}),
+    
+
             ## build the graph object 
             html.Div(id='controls-container2',
                      #children=[dcc.Graph(id='topic-graph')],
@@ -304,11 +309,26 @@ def process_input_data(contents, filename, date,processor=processor):
             doc = processor.read_doc(io.BytesIO(decoded))
             ## get country name 
             country_name = processor.country_dector.one_step_get_cname(io.BytesIO(decoded))
+            print('\n')
+            print(country_name)
+            print('\n')
+            ## get hotbutton issues 
+            document_for_hotbutton = processor.hot_button_finder.read_doc(io.BytesIO(decoded))
+            print('\n')
+            print('doc read successfully')
+            print('\n')
+            filtered_hotbutton_issues =processor.hot_button_finder.check_all_topics(document_for_hotbutton)
+            print('\n')
+            print(filtered_hotbutton_issues)
+            print('\n')
             ## get topic df
             topic_df = get_topic_df(processor,doc)
+            
+            ## store json data to div
             data_store = {'doc_name':filename,
                           'country_name':country_name,
                           'doc_date':date,
+                          'filtered_hotbutton_issues': filtered_hotbutton_issues,
                           'topic_df':topic_df.to_json(orient='split', date_format='iso')}
             return json.dumps(data_store)
             
@@ -415,6 +435,14 @@ def update_country_dropdown(json_data):
     datasets = json.loads(json_data)
     country_name = datasets['country_name']
     return country_name
+
+@app.callback(Output('hot-button-issues', 'values'),
+              [Input('intermediate-value', 'children')]
+              )
+def update_hot_button_issues(json_data):
+    datasets = json.loads(json_data)
+    issue_names = datasets['filtered_hotbutton_issues']
+    return issue_names
 
 @app.callback(Output('controls-container2', 'children'),
               [Input('intermediate-value', 'children')]
