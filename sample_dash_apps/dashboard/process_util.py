@@ -62,7 +62,8 @@ class Processor(object):
     @staticmethod
     def get_id2name_map(id2name_path):
         '''load id 2 name as a dictionary'''
-        map_df = pd.read_csv(id2name_path)
+        #map_df = pd.read_csv(id2name_path)
+        map_df = pd.read_excel(id2name_path,'Gensim Topic to LdaViz Topic')
         id2name = dict(zip(map_df['Gensim topic id'],map_df['label']))
         return id2name
         

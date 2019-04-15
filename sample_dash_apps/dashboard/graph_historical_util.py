@@ -14,6 +14,7 @@ import sys
 from process_util import Processor
 from evaluate import get_topic_df
 import copy
+import os
 #%%
 def aggregate_doc_topic_distribution(df):
     df['para_length'] = df['text'].apply(lambda x: len(x.split()))
@@ -86,11 +87,16 @@ def create_graph(df,xaxis_name,yaxis_name):
 if __name__ == "__main__":
 
     #sentiment_path = '../model_weights/sentiment_analysis_2019_02_12.xlsx'
-    topic_path = 'model_weights/Mallet_50_topics_with_country_year_2019_02_12.xlsx'
+    topic_path = 'model_weights/Mallet_50_topics_with_country_year_2019_04_10.xlsx'
+    hot_button_file_path = os.path.join('./model_weights/hot_button_issues.xlsx')
+    hot_button_dict_path = os.path.join('./model_weights/hot_button_dict.pickle')
     
     processor = Processor('model_weights/mallet_as_gensim_weights_50_2019_03_08',
-                          'model_weights/dictionary.dict')
-    
+                          'model_weights/dictionary.dict',
+                          './model_weights/country_map.xlsx',
+                          hot_button_file_path,
+                          hot_button_dict_path)
+
     data_df = pd.read_excel(topic_path,'Document and Topic')
     df_agg = aggregate_doc_topic_distribution(data_df)
     #%%

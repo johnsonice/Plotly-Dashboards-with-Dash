@@ -137,6 +137,7 @@ elements = [
                 children=['For historical timeseries analysis, please visit our ',
                  html.A('Tableau Dashboard', 
                         href='https://tableau.imf.org/#/views/ToipcModelingwithCountryandYearFilter/CountryView',
+                        target='_blank',
                         style={'color':'blue'}
                         )]
                 ,style={'textAlign': 'center','margin':'auto'}),
