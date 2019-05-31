@@ -27,7 +27,9 @@ processor = Processor(config.model_path,
                       config.dictionary_path,
                       config.country_map_path,
                       config.hot_button_file_path,
-                      config.hot_button_dict_path)
+                      config.hot_button_dict_path,
+                      config.adhoc_check_file_path,
+                      config.adhoc_check_dict_path)
 
 id2name = processor.get_id2name_map(config.id2name_path)
 ## get global historical data in memory
@@ -49,6 +51,10 @@ country_dropdown_data = [{'label':c,'value':c} for c in countries]
 ## get hotbutton issue list 
 hotbutton_issues = list(processor.hot_button_finder.hot_button_dict.keys())
 hotbutton_issues_items = [{'label':hi,'value':hi} for hi in hotbutton_issues]
+
+## get minium requirement 
+minium_requirement = list(processor.custom_finder.hot_button_dict.keys())
+minium_requirement_items = [{'label':hi,'value':hi} for hi in minium_requirement]
 
 #%%
 ## load dash style
@@ -136,7 +142,7 @@ elements = [
             html.Div(
                 children=['For historical timeseries analysis, please visit our ',
                  html.A('Tableau Dashboard', 
-                        href='https://tableau.imf.org/#/views/ToipcModelingwithCountryandYearFilter/CountryView',
+                        href='https://tableau.imf.org/#/views/ArticleIVversionchengyu/Country',
                         target='_blank',
                         style={'color':'blue'}
                         )]
@@ -151,6 +157,28 @@ elements = [
                     dcc.Checklist(
                         id='hot-button-issues',
                         options=hotbutton_issues_items,
+                        values=[],
+                        labelStyle={'display': 'inline-block',
+                                    'padding':"10px",
+                                    'width':'23.5%',
+                                    'borderWidth':'1px',
+                                    'margin':'6px',
+                                    'borderRadius': '5px',
+                                    'borderStyle': 'solid'
+                                    }
+                    )
+                    ],style={'width': '100%','margin': '10px'}
+            ),
+    
+        ## minium requirement
+            html.Div(children=[
+                    html.H5('Minimum Requirement Checklist:',
+                            style={'margin': '5px',
+                                   'padding':'5px',
+                                   }),
+                    dcc.Checklist(
+                        id='minimum-requirements',
+                        options=minium_requirement_items,
                         values=[],
                         labelStyle={'display': 'inline-block',
                                     'padding':"10px",
@@ -312,9 +340,10 @@ def process_input_data(contents, filename, date,processor=processor):
             ## get country name 
             country_name = processor.country_dector.one_step_get_cname(io.BytesIO(decoded))
             ## get hotbutton issues 
-            document_for_hotbutton = processor.hot_button_finder.read_doc(io.BytesIO(decoded))
-            filtered_hotbutton_issues =processor.hot_button_finder.check_all_topics(document_for_hotbutton)
-
+            document_for_keywords_check = processor.hot_button_finder.read_doc(io.BytesIO(decoded))
+            filtered_hotbutton_issues =processor.hot_button_finder.check_all_topics(document_for_keywords_check)
+            filtered_custom_check = processor.custom_finder.check_all_topics(document_for_keywords_check)
+            
             ## get topic df
             topic_df = get_topic_df(processor,doc)
             
@@ -323,6 +352,7 @@ def process_input_data(contents, filename, date,processor=processor):
                           'country_name':country_name,
                           'doc_date':date,
                           'filtered_hotbutton_issues': filtered_hotbutton_issues,
+                          'filtered_custom_check': filtered_custom_check,
                           'topic_df':topic_df.to_json(orient='split', date_format='iso')}
             return json.dumps(data_store)
             
@@ -437,6 +467,14 @@ def update_hot_button_issues(json_data):
     datasets = json.loads(json_data)
     issue_names = datasets['filtered_hotbutton_issues']
     return issue_names
+
+@app.callback(Output('minimum-requirements', 'values'),
+              [Input('intermediate-value', 'children')]
+              )
+def update_minimum_requirements(json_data):
+    datasets = json.loads(json_data)
+    check_names = datasets['filtered_custom_check']
+    return check_names
 
 @app.callback(Output('controls-container2', 'children'),
               [Input('intermediate-value', 'children')]

@@ -7,7 +7,7 @@ Created on Tue Mar 19 09:48:59 2019
 """
 
 import pandas as pd
-import matplotlib.pyplot as plt
+#import matplotlib.pyplot as plt
 import plotly.graph_objs as go
 import plotly.offline as pyo
 import sys

@@ -8,9 +8,9 @@ Created on Thu Mar 14 21:39:59 2019
 
 import os
 from process_util import Processor
-import config
+#import config
 import pandas as pd
-import matplotlib.pyplot as plt
+#import matplotlib.pyplot as plt
 import plotly.graph_objs as go
 import plotly.offline as pyo
 

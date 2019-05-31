@@ -11,20 +11,23 @@ import time
 import spacy
 from docx import Document
 from country_name_util import Country_detector
-from hot_button_check_util import Hotbutton_finder
+from hot_button_check_util import Hotbutton_finder,Custom_finder
 nlp = spacy.load('en')
 
 class Processor(object):
     """
     an hanlp analyzer object for dependency parsing an other related operations 
     """
-    def __init__(self,model_path,dictionary_path,country_map_path,hot_button_file=None,hot_button_dict_path=None):
+    def __init__(self,model_path,dictionary_path,country_map_path,
+                 hot_button_file=None,hot_button_dict_path=None,
+                 custom_file=None,custom_dict_path=None):
         self.model_path = model_path
         self.dictionary_path = dictionary_path
         self.vocab_dict =  corpora.Dictionary.load(dictionary_path)
         self.model = LdaModel.load(model_path)
         self.country_dector = Country_detector(country_map_path)
         self.hot_button_finder = Hotbutton_finder(hot_button_file,hot_button_dict_path)
+        self.custom_finder = Custom_finder(custom_file,custom_dict_path)
         print('LDA model load successfully. ')
 
     @staticmethod
