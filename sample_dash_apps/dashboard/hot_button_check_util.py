@@ -137,7 +137,7 @@ class Hotbutton_finder(object):
         text_list = [p.replace('\xa0',' ') for p in text_list] # some clean up 
         text_list = [p for p in text_list if len(p.split()) > word_length_filter]
         ## some replacement of "-/_" to space
-        document = list(map(lambda x: re.sub(r'—|-|_',' ',x), text_list))
+        document = list(map(lambda x: re.sub(r'/|-|_',' ',x), text_list))
         document_text = " ".join(document).lower()
         
         ## get table text
@@ -209,7 +209,7 @@ if __name__ == '__main__':
     ## initiate hotbutton object 
     hotbutton_finder = Hotbutton_finder(hot_button_file,save_file)
     #hotbutton_finder = Custom_finder(hot_button_file,save_file)
-    
+    #%%
     document = hotbutton_finder.read_doc(text_file_path)
     print(hotbutton_finder.check_all_topics(document))
 
